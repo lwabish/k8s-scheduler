@@ -34,3 +34,7 @@ func New(configuration runtime.Object, f framework.Handle) (framework.Plugin, er
 		handle: f,
 	}, nil
 }
+
+func (n *NodeMemoryPlugin) ScoreExtensions() framework.ScoreExtensions {
+	return nil
+}
