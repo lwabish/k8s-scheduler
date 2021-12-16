@@ -9,7 +9,7 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 )
 
-const Name = "node-memory-plugin"
+const Name = "NodeAllocatableMemory"
 
 type NodeMemoryPlugin struct {
 	handle framework.Handle
