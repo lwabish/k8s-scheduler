@@ -3,38 +3,45 @@ package mem
 import (
 	"context"
 	"fmt"
+	"github.com/lwabish/k8s-scheduler/pkg/utils"
+	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
+	"math"
+	"net/http"
 )
 
-const Name = "NodeAllocatableMemory"
+const Name = "NodeAvailableMemory"
 
-type NodeMemoryPlugin struct {
+type NodeAvailableMemoryPlugin struct {
 	handle framework.Handle
 }
 
-func (n NodeMemoryPlugin) Name() string {
+func (n NodeAvailableMemoryPlugin) Name() string {
 	return Name
 }
 
-func (n NodeMemoryPlugin) Score(ctx context.Context, state *framework.CycleState, pod *v1.Pod, nodeName string) (int64, *framework.Status) {
-	nodeInfo, err := n.handle.SnapshotSharedLister().NodeInfos().Get(nodeName)
-	if err != nil {
-		return 0, framework.AsStatus(fmt.Errorf("getting node %q from Snapshot: %w", nodeName, err))
-	}
-	klog.Infoln("node-memory-plugin: ", nodeInfo, pod)
-	klog.Infoln("node-memory-plugin: use allocatable mem as score: ", nodeInfo.Allocatable.Memory)
-	return nodeInfo.Allocatable.Memory, nil
+func (n NodeAvailableMemoryPlugin) Score(ctx context.Context, state *framework.CycleState, pod *v1.Pod, nodeName string) (int64, *framework.Status) {
+	queryString := fmt.Sprintf("node_memory_MemAvailable_bytes{kubernetes_node=\"%s\"}", nodeName)
+	r, _ := http.Get(fmt.Sprintf("http://localhost:62222/api/v1/query?query=%s", queryString))
+	defer r.Body.Close()
+	jsonString, _ := ioutil.ReadAll(r.Body)
+	nodeMemory, _ := utils.ParseNodeMemory(string(jsonString))
+	klog.Infof("node %s mem available is: %v bytes", nodeName, nodeMemory)
+	countBase := float64(nodeMemory/1024/1024/1024) / 10
+	score := int64(math.Round(utils.Sigmoid(countBase) * 100))
+	klog.Infof("node %s counting detail is: %v %v", nodeName, countBase, score)
+	return score, nil
 }
 
 func New(configuration runtime.Object, f framework.Handle) (framework.Plugin, error) {
-	return &NodeMemoryPlugin{
+	return &NodeAvailableMemoryPlugin{
 		handle: f,
 	}, nil
 }
 
-func (n *NodeMemoryPlugin) ScoreExtensions() framework.ScoreExtensions {
+func (n *NodeAvailableMemoryPlugin) ScoreExtensions() framework.ScoreExtensions {
 	return nil
 }
