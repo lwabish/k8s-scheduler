@@ -1,12 +1,16 @@
 package utils
 
-import "testing"
+import (
+	"math"
+	"testing"
+)
 
 var caseSigmoid = []int{1, 2, 3, 5, 7, 10, 15, 20, 24, 30, 32}
 
 func TestSigmoid(t *testing.T) {
 	for _, v := range caseSigmoid {
-		t.Logf("%d, %v", v, Sigmoid(float64(v)/10))
+		s := Sigmoid(float64(v) / 10)
+		t.Logf("%d, %v, %v", v, s, int64(math.Round(s*100)))
 	}
 }
 
