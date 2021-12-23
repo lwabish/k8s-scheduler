@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: scheduler-test
+  name: scheduler-test
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler-test
+  template:
+    metadata:
+      labels:
+        app: scheduler-test
+    spec:
+      # 这里指定配置文件里的调度器名称
+      schedulerName: mem-scheduler
+      containers:
+      - image: nginx:alpine
+        name: nginx
