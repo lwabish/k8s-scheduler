@@ -1,1 +1,3 @@
 hack/config.yml
+bin/*
+!bin/Dockerfile
