@@ -33,15 +33,24 @@ func (n NodeAvailableMemoryPlugin) Name() string {
 
 func (n NodeAvailableMemoryPlugin) Score(ctx context.Context, state *framework.CycleState, pod *v1.Pod, nodeName string) (int64, *framework.Status) {
 	queryString := fmt.Sprintf("node_memory_MemAvailable_bytes{kubernetes_node=\"%s\"}", nodeName)
-	r, _ := http.Get(fmt.Sprintf("http://%s/api/v1/query?query=%s", n.args.PrometheusEndpoint, queryString))
+	r, err := http.Get(fmt.Sprintf("http://%s/api/v1/query?query=%s", n.args.PrometheusEndpoint, queryString))
+	if err != nil {
+		return 0, framework.AsStatus(err)
+	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {
 			panic(err)
 		}
 	}(r.Body)
-	jsonString, _ := ioutil.ReadAll(r.Body)
-	nodeMemory, _ := utils.ParseNodeMemory(string(jsonString))
+	jsonString, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return 0, framework.AsStatus(err)
+	}
+	nodeMemory, err := utils.ParseNodeMemory(string(jsonString))
+	if err != nil {
+		return 0, framework.AsStatus(err)
+	}
 	normalized := utils.NormalizationMem(int64(n.args.MaxMemory*1024*1024*1024), nodeMemory)
 	sigmoid := utils.Sigmoid(normalized)
 	score := int64(math.Round(sigmoid * 100))
