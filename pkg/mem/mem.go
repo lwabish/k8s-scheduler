@@ -9,14 +9,22 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
+	runtime2 "k8s.io/kubernetes/pkg/scheduler/framework/runtime"
 	"math"
 	"net/http"
 )
 
 const Name = "NodeAvailableMemory"
 
+type NodeAvailableMemoryPluginArg struct {
+	PrometheusEndpoint string `json:"prometheus_endpoint,omitempty"`
+	MinMemory          int    `json:"min_memory,omitempty"`
+	MaxMemory          int    `json:"max_memory,omitempty"`
+}
+
 type NodeAvailableMemoryPlugin struct {
 	handle framework.Handle
+	args   NodeAvailableMemoryPluginArg
 }
 
 func (n NodeAvailableMemoryPlugin) Name() string {
@@ -33,12 +41,19 @@ func (n NodeAvailableMemoryPlugin) Score(ctx context.Context, state *framework.C
 	countBase := float64(nodeMemory/1024/1024/1024) / 10
 	score := int64(math.Round(utils.Sigmoid(countBase) * 100))
 	klog.Infof("node %s counting detail is: %v %v", nodeName, countBase, score)
+	klog.Infoln(n.args.PrometheusEndpoint, n.args.MaxMemory, n.args.MinMemory)
 	return score, nil
 }
 
 func New(configuration runtime.Object, f framework.Handle) (framework.Plugin, error) {
+	args := &NodeAvailableMemoryPluginArg{}
+	err := runtime2.DecodeInto(configuration, args)
+	if err != nil {
+		return nil, err
+	}
 	return &NodeAvailableMemoryPlugin{
 		handle: f,
+		args:   *args,
 	}, nil
 }
 
