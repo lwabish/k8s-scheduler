@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/lwabish/k8s-scheduler/pkg/utils"
+	"io"
 	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,7 +19,6 @@ const Name = "NodeAvailableMemory"
 
 type NodeAvailableMemoryPluginArg struct {
 	PrometheusEndpoint string `json:"prometheus_endpoint,omitempty"`
-	MinMemory          int    `json:"min_memory,omitempty"`
 	MaxMemory          int    `json:"max_memory,omitempty"`
 }
 
@@ -33,15 +33,19 @@ func (n NodeAvailableMemoryPlugin) Name() string {
 
 func (n NodeAvailableMemoryPlugin) Score(ctx context.Context, state *framework.CycleState, pod *v1.Pod, nodeName string) (int64, *framework.Status) {
 	queryString := fmt.Sprintf("node_memory_MemAvailable_bytes{kubernetes_node=\"%s\"}", nodeName)
-	r, _ := http.Get(fmt.Sprintf("http://localhost:62222/api/v1/query?query=%s", queryString))
-	defer r.Body.Close()
+	r, _ := http.Get(fmt.Sprintf("http://%s/api/v1/query?query=%s", n.args.PrometheusEndpoint, queryString))
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(r.Body)
 	jsonString, _ := ioutil.ReadAll(r.Body)
 	nodeMemory, _ := utils.ParseNodeMemory(string(jsonString))
-	klog.Infof("node %s mem available is: %v bytes", nodeName, nodeMemory)
-	countBase := float64(nodeMemory/1024/1024/1024) / 10
-	score := int64(math.Round(utils.Sigmoid(countBase) * 100))
-	klog.Infof("node %s counting detail is: %v %v", nodeName, countBase, score)
-	klog.Infoln(n.args.PrometheusEndpoint, n.args.MaxMemory, n.args.MinMemory)
+	normalized := utils.NormalizationMem(int64(n.args.MaxMemory*1024*1024*1024), nodeMemory)
+	sigmoid := utils.Sigmoid(normalized)
+	score := int64(math.Round(sigmoid * 100))
+	klog.Infof("node %s counting detail:available %v normalized %v, sigmoid %v, score %v", nodeMemory, nodeName, normalized, sigmoid, score)
 	return score, nil
 }
 
