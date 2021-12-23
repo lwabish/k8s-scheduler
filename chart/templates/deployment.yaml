@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lwabishscheduler
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: lwabishscheduler
+  template:
+    metadata:
+      labels:
+        app: lwabishscheduler
+    spec:
+      serviceAccountName: lwabish-scheduler
+      volumes:
+        - name: config
+          configMap:
+            name: lwabishscheduler
+      containers:
+        - name: lwabishscheduler
+          image: {{ .Values.image.repository }}:{{ .Chart.AppVersion }}
+          args:
+            - --config=/app/config.yml
+            - --v=3
+          volumeMounts:
+            - mountPath: /app/config.yml
+              name: config
+              subPath: config.yml

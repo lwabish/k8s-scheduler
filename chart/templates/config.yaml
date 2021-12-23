@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lwabishscheduler
+data:
+  config.yml: |-
+{{ .Values.schedulerConfig | indent 4}}
