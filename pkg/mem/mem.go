@@ -54,7 +54,7 @@ func (n NodeAvailableMemoryPlugin) Score(ctx context.Context, state *framework.C
 	normalized := utils.NormalizationMem(int64(n.args.MaxMemory*1024*1024*1024), nodeMemory)
 	sigmoid := utils.Sigmoid(normalized)
 	score := int64(math.Round(sigmoid * 100))
-	klog.Infof("node %s counting detail:available %v normalized %v, sigmoid %v, score %v", nodeMemory, nodeName, normalized, sigmoid, score)
+	klog.Infof("node %s counting detail:available %v normalized %v, sigmoid %v, score %v", nodeName, nodeMemory, normalized, sigmoid, score)
 	return score, nil
 }
 
