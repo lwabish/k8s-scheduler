@@ -5,27 +5,35 @@ import (
 	"testing"
 )
 
-var caseSigmoid = []int{1, 2, 3, 5, 7, 10, 15, 20, 24, 30, 32}
-var caseSigmoidMemory = []int{5446642176}
+// 对归一化后的结果放大一定的倍数，使结果更适合作为sigmoid函数的参数
+const multiplicationFactor = 4
 
-func TestSigmoid(t *testing.T) {
-	for _, v := range caseSigmoid {
-		s := Sigmoid(float64(v) / 10)
-		t.Logf("%d, %v, %v", v, s, int64(math.Round(s*100)))
-	}
-	for _, v := range caseSigmoidMemory {
-		memG := v / 1024 / 1024 / 1024
-		t.Log(memG)
-		countBase := float64(memG) / 10
-		t.Log(countBase)
-		t.Logf("%v", Sigmoid(countBase))
-	}
+var caseAvailableMemBytes []int64
+var normalized []float64
 
+func TestNormalizationMem(t *testing.T) {
+	for i := 0.0; i < 32.0; i += 0.5 {
+		caseAvailableMemBytes = append(caseAvailableMemBytes, int64(i*1024*1024*1024))
+	}
+	for _, v := range caseAvailableMemBytes {
+		result := NormalizationMem(32*1024*1024*1024, v)
+		normalized = append(normalized, result)
+		t.Logf("mem: %v, normalized: %v", v, result)
+	}
 }
 
-var caseParseNodeMemory = `{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"10.233.92.93:9100","job":"node-exporter","kubernetes_namespace":"lens-metrics","kubernetes_node":"node3"},"value":[1639801850.034,"3909283840"]}]}}`
+func TestSigmoid(t *testing.T) {
+	TestNormalizationMem(t)
+	for i, v := range normalized {
+		s := Sigmoid(v * multiplicationFactor)
+		score := int64(math.Round(s * 100))
+		t.Logf("memBytes: %v, normalized: %v, sigmoid: %v, score: %v", caseAvailableMemBytes[i], v, s, score)
+	}
+}
+
+var casePrometheusNodeMemoryResult = `{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"node_memory_MemAvailable_bytes","instance":"10.233.92.93:9100","job":"node-exporter","kubernetes_namespace":"lens-metrics","kubernetes_node":"node3"},"value":[1639801850.034,"3909283840"]}]}}`
 
 func TestParseNodeMemory(t *testing.T) {
-	mem, _ := ParseNodeMemory(caseParseNodeMemory)
+	mem, _ := ParseNodeMemory(casePrometheusNodeMemoryResult)
 	t.Logf("result: %v bytes", mem)
 }
