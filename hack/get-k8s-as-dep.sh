@@ -3,7 +3,7 @@
 VERSION=${1#"v"}
 if [ -z "$VERSION" ]; then
     echo "Please specify the Kubernetes version: e.g."
-    echo "./download-deps.sh 1.21.0"
+    echo "bash hack/get-k8s-as-dep.sh 1.21.6"
     exit 1
 fi
 
