@@ -1,0 +1,26 @@
+apiVersion: kubescheduler.config.k8s.io/v1beta1
+kind: KubeSchedulerConfiguration
+leaderElection:
+  resourceName: lwabish-scheduler
+profiles:
+  - pluginConfig:
+      - args:
+          prometheus_endpoint: localhost:62222
+          max_memory: 6
+        name: NodeAvailableMemory
+    plugins:
+      score:
+        disabled:
+          - name: NodeResourcesBalancedAllocation
+          - name: ImageLocality
+          - name: InterPodAffinity
+          - name: NodeResourcesLeastAllocated
+          - name: NodeAffinity
+          - name: NodePreferAvoidPods
+          - name: PodTopologySpread
+          - name: TaintToleration
+        enabled:
+          - name: NodeAvailableMemory
+            weight: 1
+    schedulerName: mem-scheduler
+
