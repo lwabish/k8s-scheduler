@@ -93,7 +93,7 @@ func (n *NodeAvailableMemoryPlugin) getNodeUsedMemory(nodeName string) (int64, e
 	return nodeMetrics.Usage.Memory().Value(), nil
 }
 
-// GetNodeAvailableMemory 输入节点名称和普罗米修斯地址，获取该节点的可用内存量
+// GetNodeAvailableMemory 输入节点名称，获取该节点的可用内存量（从prometheus获取）
 func (n *NodeAvailableMemoryPlugin) getNodeAvailableMemory(nodeName string) (int64, error) {
 	queryString := fmt.Sprintf("node_memory_MemAvailable_bytes{kubernetes_node=\"%s\"}", nodeName)
 	r, err := http.Get(fmt.Sprintf("http://%s/api/v1/query?query=%s", n.args.PrometheusEndpoint, queryString))
