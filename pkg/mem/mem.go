@@ -30,11 +30,11 @@ type NodeAvailableMemoryPlugin struct {
 	args   NodeAvailableMemoryPluginArg
 }
 
-func (n NodeAvailableMemoryPlugin) Name() string {
+func (n *NodeAvailableMemoryPlugin) Name() string {
 	return Name
 }
 
-func (n NodeAvailableMemoryPlugin) Score(_ context.Context, _ *framework.CycleState, _ *v1.Pod, nodeName string) (int64, *framework.Status) {
+func (n *NodeAvailableMemoryPlugin) Score(_ context.Context, _ *framework.CycleState, _ *v1.Pod, nodeName string) (int64, *framework.Status) {
 	var nodeMemory int64
 	if n.args.PrometheusEndpoint == "" {
 		used, err := n.getNodeUsedMemory(nodeName)
