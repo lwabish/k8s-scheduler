@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/lwabish/k8s-scheduler/pkg/utils"
 	"io"
-	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -106,7 +105,7 @@ func (n *NodeAvailableMemoryPlugin) getNodeAvailableMemory(nodeName string) (int
 			panic(err)
 		}
 	}(r.Body)
-	jsonString, err := ioutil.ReadAll(r.Body)
+	jsonString, err := io.ReadAll(r.Body)
 	if err != nil {
 		return 0, err
 	}
